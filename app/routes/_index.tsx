@@ -116,7 +116,7 @@ export default function Index() {
                 onFinish();
               }
             }}
-            $variant={running ? "warn" : "success"}
+            variant={running ? "warn" : "success"}
           >
             {running ? "Finish" : "Start"}
           </Button>
