@@ -63,7 +63,7 @@ export default function Index() {
 
   return (
     <main className="relative min-h-screen bg-white m-6">
-      <h1 className="text-4xl font-bold text-center">Split Times</h1>
+      <h1 className="text-4xl font-bold text-center">Simple Split Times</h1>
       <div id="clock" className="flex justify-between my-8">
         <div
           id="time"
