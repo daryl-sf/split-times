@@ -3,11 +3,11 @@ split-times-a104
 
 @aws
 runtime nodejs18.x
+region eu-west-1
+timeout 30
 # concurrency 1
 # memory 1152
 # profile default
-# region us-west-1
-# timeout 30
 
 @http
 /*
@@ -19,10 +19,3 @@ plugin-remix
   src plugin-remix.js
 
 @static
-
-@tables
-user
-  pk *String
-
-password
-  pk *String # userId
