@@ -1,5 +1,5 @@
 @app
-city-pop-stack-template
+split-times-a104
 
 @aws
 runtime nodejs18.x

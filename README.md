@@ -24,15 +24,6 @@ Not a fan of bits of the stack? Fork it, change it, and use `npx create-remix --
 
 ## Development
 
-- First run this stack's `remix.init` script and commit the changes it makes to your project.
-
-  ```sh
-  npx remix init
-  git init # if you haven't already
-  git add .
-  git commit -m "Initialize project"
-  ```
-
 - Validate the app has been set up properly (optional):
 
   ```sh
@@ -78,7 +69,7 @@ Prior to your first deployment, you'll need to do a few things:
 
 You can find the CloudFormation template that Architect generated for you in the sam.yaml file.
 
-To find it on AWS, you can search for [CloudFormation](https://console.aws.amazon.com/cloudformation/home) (make sure you're looking at the correct region!) and find the name of your stack (the name is a PascalCased version of what you have in `app.arc`, so by default it's CityPopStackStaging and CityPopStackProduction) that matches what's in `app.arc`, you can find all of your app's resources under the "Resources" tab.
+To find it on AWS, you can search for [CloudFormation](https://console.aws.amazon.com/cloudformation/home) (make sure you're looking at the correct region!) and find the name of your stack (the name is a PascalCased version of what you have in `app.arc`, so by default it's SplitTimesA104Staging and SplitTimesA104Production) that matches what's in `app.arc`, you can find all of your app's resources under the "Resources" tab.
 
 ## GitHub Actions
 
