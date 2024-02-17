@@ -3,6 +3,8 @@ import localforage from "localforage";
 import { ChangeEvent, useEffect, useState } from "react";
 
 import { Button } from "~/components/Button";
+import { Keypad } from "~/components/Keypad";
+import { SplitTime } from "~/components/SplitTime";
 import { useWakeLock } from "~/useWakeLock";
 import { convertMsToTime } from "~/utils";
 
@@ -63,31 +65,29 @@ export default function Index() {
     );
   };
 
-  const handleStageChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleStageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newNum = parseInt(e.target.value, 10) || 0;
     clearInterval(intervalId!);
     setStartTime(0);
     setTime(0);
     setRunning(false);
-    setNumberOfStages(parseInt(e.target.value, 10));
-    setSplitTimes(
-      [...Array(numberOfRunners)].map((_, i) => ({
-        runner: i + 1,
-        stage: [],
-      })),
-    );
+    setNumberOfStages(newNum);
   };
 
-  const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newNum = parseInt(e.target.value, 10) || 0;
     clearInterval(intervalId!);
     setStartTime(0);
     setTime(0);
     setRunning(false);
-    setNumberOfRunners(parseInt(e.target.value, 10));
+    setNumberOfRunners(newNum);
     setSplitTimes(
-      [...Array(numberOfRunners)].map((_, i) => ({
-        runner: i + 1,
-        stage: [],
-      })),
+      newNum
+        ? [...Array(newNum)].map((_, i) => ({
+            runner: i + 1,
+            stage: [],
+          }))
+        : [],
     );
   };
 
@@ -136,7 +136,7 @@ export default function Index() {
       <div className="col-span-3 text-2xl my-2 mx-auto text-center">
         {numberInput || <>&nbsp;</>}
       </div>
-      <div className="flex justify-around">
+      <div className="flex justify-around mb-8">
         <div className="flex flex-col justify-between gap-2">
           <div
             id="time"
@@ -146,38 +146,28 @@ export default function Index() {
           </div>
           <label htmlFor="numberOfRunners" className="flex flex-col">
             <span>Number of Runners</span>
-            <select
+            <input
+              type="number"
               name="numberOfRunners"
               id="numberOfRunners"
               onChange={handleNumberOfRunnersChange}
-              value={numberOfRunners}
+              defaultValue={numberOfRunners}
               className="p-2 rounded-md border border-gray-300"
               disabled={running}
-            >
-              {[...Array(100)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} Runners
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <label htmlFor="numberOfStages" className="flex flex-col">
-            <span>Number of Stages</span>
-            <select
+            <span>Number of Stages (inc transistions)</span>
+            <input
+              type="number"
               name="numberOfStages"
               id="numberOfStages"
               onChange={handleStageChange}
-              value={numberOfStages}
+              defaultValue={numberOfStages}
               className="p-2 rounded-md border border-gray-300"
               disabled={running}
-            >
-              {[...Array(5)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} Stages
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <Button
@@ -191,50 +181,18 @@ export default function Index() {
               }
             }}
             variant={running ? "warn" : "success"}
+            disabled={!numberOfRunners || !numberOfStages}
           >
             {running ? "Finish" : "Start"} Race
           </Button>
         </div>
-        <div className="grid grid-cols-3 grid-rows-4 gap-4 w-1/2">
-          <Button onClick={() => handleNumberInput(1)}>1</Button>
-          <Button onClick={() => handleNumberInput(2)}>2</Button>
-          <Button onClick={() => handleNumberInput(3)}>3</Button>
-          <Button onClick={() => handleNumberInput(4)}>4</Button>
-          <Button onClick={() => handleNumberInput(5)}>5</Button>
-          <Button onClick={() => handleNumberInput(6)}>6</Button>
-          <Button onClick={() => handleNumberInput(7)}>7</Button>
-          <Button onClick={() => handleNumberInput(8)}>8</Button>
-          <Button onClick={() => handleNumberInput(9)}>9</Button>
-          <Button
-            onClick={() => handleNumberInput("del")}
-            disabled={!numberInput}
-          >
-            &lt;
-          </Button>
-          <Button onClick={() => handleNumberInput(0)}>0</Button>
-          <Button
-            onClick={() => handleNumberInput("enter")}
-            disabled={!numberInput}
-          >
-            Enter
-          </Button>
-        </div>
+        <Keypad
+          onChange={handleNumberInput}
+          disabledEnter={!numberInput}
+          disabledDel={!numberInput}
+        />
       </div>
-      <div className="grid grid-cols-5 gap-4 justify-items-center mt-8">
-        {splitTimes.map((splitTime, i) => (
-          <div key={i}>
-            <div>Runner {splitTime.runner}</div>
-            <div>
-              {!splitTime.stage.length ? <>&nbsp;</> : null}
-              {splitTime.stage.map((stage, j) => (
-                <div key={j}>
-                  {stage.id}: {convertMsToTime(stage.time)}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      <SplitTime splits={splitTimes} />
     </main>
   );
 }
