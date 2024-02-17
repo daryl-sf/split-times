@@ -73,7 +73,7 @@ function handleBotRequest(
                 <link rel="icon" href="/_static/favicon.ico" />
                   ${head}
                 </head>
-                <body>
+                <body class="bg-zinc-100">
                 <div id="root">`,
           );
           pipe(body);
@@ -129,7 +129,7 @@ function handleBrowserRequest(
                 <link rel="icon" href="/_static/favicon.ico" />
                   ${head}
                 </head>
-                <body>
+                <body class="bg-zinc-100">
                 <div id="root">`,
           );
           pipe(body);

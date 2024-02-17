@@ -26,7 +26,7 @@ export const Button: FC<ButtonProps> = ({
     <button
       className={`${getBgColor(
         variant,
-      )} cursor-pointer text-white p-4 text-center inline-block rounded-sm disabled:bg-gray-500 disabled:cursor-not-allowed ${className}`}
+      )} cursor-pointer text-white p-4 text-center inline-block rounded-sm disabled:bg-gray-500 disabled:cursor-not-allowed active:scale-95 transition-transform ${className}`}
       {...props}
     >
       {children}

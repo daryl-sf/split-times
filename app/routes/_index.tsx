@@ -1,6 +1,6 @@
 import type { MetaFunction } from "@remix-run/node";
 import localforage from "localforage";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 import { Button } from "~/components/Button";
 import { useWakeLock } from "~/useWakeLock";
@@ -22,13 +22,15 @@ export default function Index() {
   const [running, setRunning] = useState(false);
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [numberOfRunners, setNumberOfRunners] = useState(20);
-  const [splitTimes, setSplitTimes] = useState<SplitTime[]>([]);
   const [numberOfStages, setNumberOfStages] = useState(5);
-  const { request, release } = useWakeLock({
-    onRequest: () => console.log("Screen Wake Lock: requested!"),
-    onError: () => console.log("An error happened 💥"),
-    onRelease: () => console.log("Screen Wake Lock: released!"),
-  });
+  const [numberInput, setNumberInput] = useState<number | null>(null);
+  const [splitTimes, setSplitTimes] = useState<SplitTime[]>(
+    [...Array(numberOfRunners)].map((_, i) => ({
+      runner: i + 1,
+      stage: [],
+    })),
+  );
+  const { request, release } = useWakeLock();
 
   useEffect(() => {
     if (!running) {
@@ -61,23 +63,89 @@ export default function Index() {
     );
   };
 
+  const handleStageChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setNumberOfStages(parseInt(e.target.value, 10));
+    setSplitTimes(
+      [...Array(numberOfRunners)].map((_, i) => ({
+        runner: i + 1,
+        stage: [...Array(numberOfStages)].map((_, j) => ({
+          id: j + 1,
+          time: 0,
+        })),
+      })),
+    );
+  };
+
+  const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setNumberOfRunners(parseInt(e.target.value, 10));
+    setSplitTimes(
+      [...Array(numberOfRunners)].map((_, i) => ({
+        runner: i + 1,
+        stage: [...Array(numberOfStages)].map((_, j) => ({
+          id: j + 1,
+          time: 0,
+        })),
+      })),
+    );
+  };
+
+  const handleSplitTime = (runner: number) => {
+    const splitTime = splitTimes.find(
+      (splitTime) => splitTime.runner === runner,
+    );
+    if (hasRunnerFinished(runner)) return;
+    if (splitTime) {
+      setSplitTimes(
+        splitTimes.map((splitTime) =>
+          splitTime.runner === runner
+            ? {
+                ...splitTime,
+                stage: [
+                  ...splitTime.stage,
+                  {
+                    id: splitTime.stage.length + 1,
+                    time: time - startTime,
+                  },
+                ],
+              }
+            : splitTime,
+        ),
+      );
+    }
+  };
+
+  const handleNumberInput = (key: number | "del" | "enter") => {
+    if (typeof key === "string") {
+      if (key === "del") {
+        console.log(numberInput, Math.floor(numberInput! / 10));
+        setNumberInput(Math.floor(numberInput! / 10) || null);
+      } else if (key === "enter") {
+        handleSplitTime(numberInput!);
+        setNumberInput(null);
+      }
+      return;
+    }
+    const newKey = numberInput === null ? key : numberInput * 10 + key;
+    setNumberInput(newKey);
+  };
+
   return (
-    <main className="relative min-h-screen bg-white m-6">
-      <h1 className="text-4xl font-bold text-center">Simple Split Times</h1>
-      <div id="clock" className="flex justify-between my-8">
-        <div
-          id="time"
-          className="text-2xl font-bold bg-gray-100 p-2 rounded-md"
-        >
-          {convertMsToTime(time - startTime)}
-        </div>
+    <main className="relative min-h-screenm-6">
+      <h1 className="text-6xl font-bold text-center">Simple Split Times</h1>
+      <div
+        id="time"
+        className="text-4xl font-bold bg-gray-300 p-2 rounded-md text-center my-8"
+      >
+        {convertMsToTime(time - startTime)}
+      </div>
+      <div className="flex justify-center mb-8">
         <div className="flex gap-8">
           <label htmlFor="numberOfRunners" className="flex flex-col">
             <span>Number of Runners</span>
             <select
               name="numberOfRunners"
               id="numberOfRunners"
-              onChange={(e) => setNumberOfRunners(parseInt(e.target.value, 10))}
+              onChange={handleNumberOfRunnersChange}
               value={numberOfRunners}
               className="p-2 rounded-md border border-gray-300"
             >
@@ -94,7 +162,7 @@ export default function Index() {
             <select
               name="numberOfStages"
               id="numberOfStages"
-              onChange={(e) => setNumberOfStages(parseInt(e.target.value, 10))}
+              onChange={handleStageChange}
               value={numberOfStages}
               className="p-2 rounded-md border border-gray-300"
             >
@@ -118,64 +186,46 @@ export default function Index() {
             }}
             variant={running ? "warn" : "success"}
           >
-            {running ? "Finish" : "Start"}
+            {running ? "Finish" : "Start"} Race
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-10 gap-2">
-        {[...Array(numberOfRunners)].map((_, i) => (
-          <Button
-            key={i}
-            disabled={hasRunnerFinished(i + 1)}
-            onClick={() => {
-              const splitTime = splitTimes.find(
-                (splitTime) => splitTime.runner === i + 1,
-              );
-              if (splitTime) {
-                setSplitTimes(
-                  splitTimes.map((splitTime) =>
-                    splitTime.runner === i + 1
-                      ? {
-                          ...splitTime,
-                          stage: [
-                            ...splitTime.stage,
-                            {
-                              id: splitTime.stage.length + 1,
-                              time: time - startTime,
-                            },
-                          ],
-                        }
-                      : splitTime,
-                  ),
-                );
-              } else {
-                setSplitTimes([
-                  ...splitTimes,
-                  {
-                    runner: i + 1,
-                    stage: [
-                      {
-                        id: 1,
-                        time: time - startTime,
-                      },
-                    ],
-                  },
-                ]);
-              }
-            }}
-          >
-            {i + 1}
-          </Button>
-        ))}
+      <div className="col-span-3 text-2xl my-2 mx-auto text-center">
+        {numberInput || <>&nbsp;</>}
       </div>
-      <div>
+      <div className="grid grid-cols-3 grid-rows-4 gap-4 w-1/2 mx-auto">
+        <Button onClick={() => handleNumberInput(1)}>1</Button>
+        <Button onClick={() => handleNumberInput(2)}>2</Button>
+        <Button onClick={() => handleNumberInput(3)}>3</Button>
+        <Button onClick={() => handleNumberInput(4)}>4</Button>
+        <Button onClick={() => handleNumberInput(5)}>5</Button>
+        <Button onClick={() => handleNumberInput(6)}>6</Button>
+        <Button onClick={() => handleNumberInput(7)}>7</Button>
+        <Button onClick={() => handleNumberInput(8)}>8</Button>
+        <Button onClick={() => handleNumberInput(9)}>9</Button>
+        <Button
+          onClick={() => handleNumberInput("del")}
+          disabled={!numberInput}
+        >
+          &lt;
+        </Button>
+        <Button onClick={() => handleNumberInput(0)}>0</Button>
+        <Button
+          onClick={() => handleNumberInput("enter")}
+          disabled={!numberInput}
+        >
+          Enter
+        </Button>
+      </div>
+      <div className="grid grid-cols-5 gap-4 justify-items-center mt-8">
         {splitTimes.map((splitTime, i) => (
-          <div key={i} className="flex gap-2">
+          <div key={i}>
             <div>Runner {splitTime.runner}</div>
             <div>
+              {!splitTime.stage.length ? <>&nbsp;</> : null}
               {splitTime.stage.map((stage, j) => (
                 <div key={j}>
-                  Stage {stage.id}: {convertMsToTime(stage.time)}
+                  {stage.id}: {convertMsToTime(stage.time)}
                 </div>
               ))}
             </div>
