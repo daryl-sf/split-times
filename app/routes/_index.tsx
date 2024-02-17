@@ -64,27 +64,29 @@ export default function Index() {
   };
 
   const handleStageChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    clearInterval(intervalId!);
+    setStartTime(0);
+    setTime(0);
+    setRunning(false);
     setNumberOfStages(parseInt(e.target.value, 10));
     setSplitTimes(
       [...Array(numberOfRunners)].map((_, i) => ({
         runner: i + 1,
-        stage: [...Array(numberOfStages)].map((_, j) => ({
-          id: j + 1,
-          time: 0,
-        })),
+        stage: [],
       })),
     );
   };
 
   const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    clearInterval(intervalId!);
+    setStartTime(0);
+    setTime(0);
+    setRunning(false);
     setNumberOfRunners(parseInt(e.target.value, 10));
     setSplitTimes(
       [...Array(numberOfRunners)].map((_, i) => ({
         runner: i + 1,
-        stage: [...Array(numberOfStages)].map((_, j) => ({
-          id: j + 1,
-          time: 0,
-        })),
+        stage: [],
       })),
     );
   };
@@ -131,15 +133,17 @@ export default function Index() {
 
   return (
     <main className="relative min-h-screenm-6">
-      <h1 className="text-6xl font-bold text-center">Simple Split Times</h1>
-      <div
-        id="time"
-        className="text-4xl font-bold bg-gray-300 p-2 rounded-md text-center my-8"
-      >
-        {convertMsToTime(time - startTime)}
+      <div className="col-span-3 text-2xl my-2 mx-auto text-center">
+        {numberInput || <>&nbsp;</>}
       </div>
-      <div className="flex justify-center mb-8">
-        <div className="flex gap-8">
+      <div className="flex justify-around">
+        <div className="flex flex-col justify-between gap-2">
+          <div
+            id="time"
+            className="text-4xl font-bold bg-gray-300 p-2 rounded-md text-center"
+          >
+            {convertMsToTime(time - startTime)}
+          </div>
           <label htmlFor="numberOfRunners" className="flex flex-col">
             <span>Number of Runners</span>
             <select
@@ -148,6 +152,7 @@ export default function Index() {
               onChange={handleNumberOfRunnersChange}
               value={numberOfRunners}
               className="p-2 rounded-md border border-gray-300"
+              disabled={running}
             >
               {[...Array(100)].map((_, i) => (
                 <option key={i + 1} value={i + 1}>
@@ -165,6 +170,7 @@ export default function Index() {
               onChange={handleStageChange}
               value={numberOfStages}
               className="p-2 rounded-md border border-gray-300"
+              disabled={running}
             >
               {[...Array(5)].map((_, i) => (
                 <option key={i + 1} value={i + 1}>
@@ -189,33 +195,30 @@ export default function Index() {
             {running ? "Finish" : "Start"} Race
           </Button>
         </div>
-      </div>
-      <div className="col-span-3 text-2xl my-2 mx-auto text-center">
-        {numberInput || <>&nbsp;</>}
-      </div>
-      <div className="grid grid-cols-3 grid-rows-4 gap-4 w-1/2 mx-auto">
-        <Button onClick={() => handleNumberInput(1)}>1</Button>
-        <Button onClick={() => handleNumberInput(2)}>2</Button>
-        <Button onClick={() => handleNumberInput(3)}>3</Button>
-        <Button onClick={() => handleNumberInput(4)}>4</Button>
-        <Button onClick={() => handleNumberInput(5)}>5</Button>
-        <Button onClick={() => handleNumberInput(6)}>6</Button>
-        <Button onClick={() => handleNumberInput(7)}>7</Button>
-        <Button onClick={() => handleNumberInput(8)}>8</Button>
-        <Button onClick={() => handleNumberInput(9)}>9</Button>
-        <Button
-          onClick={() => handleNumberInput("del")}
-          disabled={!numberInput}
-        >
-          &lt;
-        </Button>
-        <Button onClick={() => handleNumberInput(0)}>0</Button>
-        <Button
-          onClick={() => handleNumberInput("enter")}
-          disabled={!numberInput}
-        >
-          Enter
-        </Button>
+        <div className="grid grid-cols-3 grid-rows-4 gap-4 w-1/2">
+          <Button onClick={() => handleNumberInput(1)}>1</Button>
+          <Button onClick={() => handleNumberInput(2)}>2</Button>
+          <Button onClick={() => handleNumberInput(3)}>3</Button>
+          <Button onClick={() => handleNumberInput(4)}>4</Button>
+          <Button onClick={() => handleNumberInput(5)}>5</Button>
+          <Button onClick={() => handleNumberInput(6)}>6</Button>
+          <Button onClick={() => handleNumberInput(7)}>7</Button>
+          <Button onClick={() => handleNumberInput(8)}>8</Button>
+          <Button onClick={() => handleNumberInput(9)}>9</Button>
+          <Button
+            onClick={() => handleNumberInput("del")}
+            disabled={!numberInput}
+          >
+            &lt;
+          </Button>
+          <Button onClick={() => handleNumberInput(0)}>0</Button>
+          <Button
+            onClick={() => handleNumberInput("enter")}
+            disabled={!numberInput}
+          >
+            Enter
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-5 gap-4 justify-items-center mt-8">
         {splitTimes.map((splitTime, i) => (
