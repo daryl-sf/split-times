@@ -6,7 +6,7 @@ export interface KeypadProps {
   onChange: (value: number | "del" | "enter") => void;
   disabledDel?: boolean;
   disabledEnter?: boolean;
-  numberInput?: number;
+  numberInput?: number | null;
 }
 
 export const Keypad: FC<KeypadProps> = ({
