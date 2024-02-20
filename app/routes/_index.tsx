@@ -158,7 +158,7 @@ export default function Index() {
           </label>
 
           <label htmlFor="numberOfStages" className="flex flex-col">
-            <span>Number of Stages (inc transistions)</span>
+            <span>Number of Stages (inc transitions if needed)</span>
             <input
               type="number"
               name="numberOfStages"
