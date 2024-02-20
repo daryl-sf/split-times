@@ -6,15 +6,20 @@ export interface KeypadProps {
   onChange: (value: number | "del" | "enter") => void;
   disabledDel?: boolean;
   disabledEnter?: boolean;
+  numberInput?: number;
 }
 
 export const Keypad: FC<KeypadProps> = ({
   onChange,
   disabledDel,
   disabledEnter,
+  numberInput,
 }) => {
   return (
-    <div className="grid grid-cols-3 grid-rows-4 gap-4 w-1/2">
+    <div className="grid grid-cols-3 grid-rows-4 gap-4 sm:w-1/2">
+      <div className="col-span-3 text-2xl my-2 mx-auto text-center">
+        {numberInput || <>&nbsp;</>}
+      </div>
       <Button onClick={() => onChange(1)}>1</Button>
       <Button onClick={() => onChange(2)}>2</Button>
       <Button onClick={() => onChange(3)}>3</Button>

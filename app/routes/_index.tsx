@@ -133,10 +133,7 @@ export default function Index() {
 
   return (
     <main className="relative min-h-screenm-6">
-      <div className="col-span-3 text-2xl my-2 mx-auto text-center">
-        {numberInput || <>&nbsp;</>}
-      </div>
-      <div className="flex justify-around mb-8">
+      <div className="flex justify-around mb-8 flex-wrap">
         <div className="flex flex-col justify-between gap-2">
           <div
             id="time"
@@ -190,6 +187,7 @@ export default function Index() {
           onChange={handleNumberInput}
           disabledEnter={!numberInput}
           disabledDel={!numberInput}
+          numberInput={numberInput}
         />
       </div>
       <SplitTime splits={splitTimes} />
