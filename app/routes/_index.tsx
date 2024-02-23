@@ -1,4 +1,5 @@
-import type { MetaFunction } from "@remix-run/node";
+import { type MetaFunction } from "@remix-run/node";
+import { Form } from "@remix-run/react";
 import localforage from "localforage";
 import { ChangeEvent, useEffect, useState } from "react";
 
@@ -24,6 +25,7 @@ export default function Index() {
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [numberOfRunners, setNumberOfRunners] = useState(20);
   const [numberOfStages, setNumberOfStages] = useState(5);
+  const [showSplitTimes, setShowSplitTimes] = useState(false);
   const [splitTimes, setSplitTimes] = useState<SplitTime[]>(
     [...Array(numberOfRunners)].map((_, i) => ({
       runner: i + 1,
@@ -114,6 +116,9 @@ export default function Index() {
 
   return (
     <main className="relative min-h-screenm-6">
+      {showSplitTimes ? (
+        <SplitTime splits={splitTimes} close={() => setShowSplitTimes(false)} />
+      ) : null}
       <div className="m-4">
         <div
           className={`flex justify-between gap-2 ${
@@ -171,6 +176,14 @@ export default function Index() {
           >
             {running ? "Finish" : "Start"} Race
           </Button>
+          {!running ? (
+            <Button
+              className="px-12 bg-slate-800 text-white p-2 rounded-md text-center"
+              onClick={() => setShowSplitTimes(true)}
+            >
+              Show Split Times
+            </Button>
+          ) : null}
         </div>
         <div className="grid gap-4 grid-cols-4 md:grid-cols-9 mt-2">
           {splitTimes.map((splitTime, i) => (
