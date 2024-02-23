@@ -1,4 +1,5 @@
 import { type MetaFunction } from "@remix-run/node";
+import { Link } from "@remix-run/react";
 import localforage from "localforage";
 import { ChangeEvent, useEffect, useState } from "react";
 
@@ -21,10 +22,10 @@ export default function Index() {
   const [startTime, setStartTime] = useState(0);
   const [time, setTime] = useState(0);
   const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [numberOfRunners, setNumberOfRunners] = useState(20);
   const [numberOfStages, setNumberOfStages] = useState(5);
-  const [showSplitTimes, setShowSplitTimes] = useState(false);
   const [splitTimes, setSplitTimes] = useState<SplitTime[]>(
     [...Array(numberOfRunners)].map((_, i) => ({
       runner: i + 1,
@@ -39,6 +40,18 @@ export default function Index() {
     }
   }, [running, intervalId]);
 
+  useEffect(() => {
+    const haveAllFinished = splitTimes.every((splitTime) =>
+      splitTime.stage.every((stage) => stage.time),
+    );
+    if (haveAllFinished) {
+      setRunning(false);
+      setFinished(true);
+      release();
+      localforage.setItem(`splitTimes-${startTime}`, splitTimes);
+    }
+  }, [release, splitTimes, startTime]);
+
   const hasRunnerFinished = (runner: number) => {
     return (
       splitTimes
@@ -49,6 +62,7 @@ export default function Index() {
 
   const onFinish = () => {
     setRunning(false);
+    setFinished(true);
     release();
     localforage.setItem(`splitTimes-${startTime}`, splitTimes);
   };
@@ -72,6 +86,17 @@ export default function Index() {
     setTime(0);
     setRunning(false);
     setNumberOfStages(newNum);
+    setSplitTimes(
+      newNum
+        ? [...Array(numberOfRunners)].map((_, i) => ({
+            runner: i + 1,
+            stage: [...Array(newNum)].map((_, i) => ({
+              id: i + 1,
+              time: 0,
+            })),
+          }))
+        : [],
+    );
   };
 
   const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +110,10 @@ export default function Index() {
       newNum
         ? [...Array(newNum)].map((_, i) => ({
             runner: i + 1,
-            stage: [],
+            stage: [...Array(numberOfStages)].map((_, i) => ({
+              id: i + 1,
+              time: 0,
+            })),
           }))
         : [],
     );
@@ -97,27 +125,40 @@ export default function Index() {
     );
     if (hasRunnerFinished(runner)) return;
     if (splitTime) {
-      const stages = splitTime.stage;
+      const stages = [...splitTime.stage];
       const index = stages.findIndex((stage) => !stage.time);
+      const timeTilNow =
+        index === 0
+          ? 0
+          : stages.slice(0, index).reduce((acc, stage) => acc + stage.time, 0);
       const newSplitTime = {
         ...splitTime,
-        stage: stages.map((stage, i) =>
-          i === index ? { id: i + 1, time: time - startTime } : stage,
-        ),
+        stage: [
+          ...stages.slice(0, index),
+          {
+            ...stages[index],
+            time: time - startTime - timeTilNow,
+          },
+          ...stages.slice(index + 1),
+        ],
       };
       setSplitTimes(
         splitTimes.map((splitTime) =>
           splitTime.runner === runner ? newSplitTime : splitTime,
         ),
       );
+      if (haveAllRunnersFinished()) onFinish();
     }
+  };
+
+  const haveAllRunnersFinished = () => {
+    return splitTimes.every((splitTime) =>
+      splitTime.stage.every((stage) => stage.time),
+    );
   };
 
   return (
     <main className="relative min-h-screenm-6">
-      {showSplitTimes ? (
-        <SplitTime splits={splitTimes} close={() => setShowSplitTimes(false)} />
-      ) : null}
       <div className="m-4">
         <div
           className={`flex justify-between gap-2 ${
@@ -176,12 +217,22 @@ export default function Index() {
             {running ? "Finish" : "Start"} Race
           </Button>
           {!running ? (
-            <Button
-              className="px-12 bg-slate-800 text-white p-2 rounded-md text-center"
-              onClick={() => setShowSplitTimes(true)}
-            >
-              Show Split Times
-            </Button>
+            <div className="flex gap-4 w-full">
+              {finished ? (
+                <Link
+                  to={`/race/splitTimes-${startTime}`}
+                  className="px-12 bg-slate-800 text-white p-2 rounded-md text-center grow"
+                >
+                  Show Results
+                </Link>
+              ) : null}
+              <Link
+                to="/races"
+                className="px-12 bg-slate-800 text-white p-2 rounded-md text-center grow"
+              >
+                View Past Races
+              </Link>
+            </div>
           ) : null}
         </div>
         <div className="grid gap-4 grid-cols-4 md:grid-cols-9 mt-2">
@@ -194,7 +245,9 @@ export default function Index() {
             >
               {splitTime.runner}
               {splitTime.stage.map((stage, j) => (
-                <div key={j}>{convertMsToTime(stage.time)}</div>
+                <div key={j}>
+                  S-{j + 1}: {stage.time ? "✅" : ""}
+                </div>
               ))}
             </Button>
           ))}

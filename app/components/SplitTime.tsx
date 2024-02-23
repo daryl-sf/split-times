@@ -1,3 +1,4 @@
+import { Link } from "@remix-run/react";
 import { FC, useRef } from "react";
 
 import { SplitTime as SplitTimeType } from "~/routes/_index";
@@ -7,33 +8,29 @@ import { Button } from "./Button";
 
 export interface SplitTimeProps {
   splits: SplitTimeType[];
-  close: () => void;
 }
 
-export const SplitTime: FC<SplitTimeProps> = ({ splits, close }) => {
+export const SplitTime: FC<SplitTimeProps> = ({ splits }) => {
   const tableRef = useRef<HTMLTableElement>(null);
   return (
     <div className="h-screen w-screen bg-white fixed overflow-scroll top-0 p-3 z-50">
-      <div className="flex gap-8">
+      <div className="flex gap-8 mb-6">
         <Button
           onClick={() => {
             if (tableRef.current) {
               const text = tableRef.current.innerText;
               navigator.clipboard.writeText(text);
-              // const range = document.createRange();
-              // range.selectNode(tableRef.current);
-              // window.getSelection()?.removeAllRanges();
-              // window.getSelection()?.addRange(range);
-              // document.execCommand("copy");
-              // window.getSelection()?.removeAllRanges();
             }
           }}
         >
           Copy Results
         </Button>
-        <Button onClick={close} variant="warn">
-          Close
-        </Button>
+        <Link
+          to="/"
+          className="px-12 bg-slate-800 text-white p-2 rounded-md text-center"
+        >
+          Home
+        </Link>
       </div>
       <table ref={tableRef}>
         <thead>
