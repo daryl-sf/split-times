@@ -18,39 +18,62 @@ export interface SplitTime {
   }[];
 }
 
+export interface RaceInfo {
+  startTime: number;
+  currentTime: number;
+  isRunning: boolean;
+  isFinished: boolean;
+  numberOfRunners: number;
+  numberOfStages: number;
+  raceName: string;
+  raceDate: string;
+}
+
 export default function Index() {
-  const [startTime, setStartTime] = useState(0);
-  const [time, setTime] = useState(0);
-  const [running, setRunning] = useState(false);
-  const [finished, setFinished] = useState(false);
+  const [raceInfo, setRaceInfo] = useState<RaceInfo>({
+    startTime: 0,
+    currentTime: 0,
+    isRunning: false,
+    isFinished: false,
+    numberOfRunners: 20,
+    numberOfStages: 5,
+    raceName: new Date().toLocaleDateString(),
+    raceDate: new Date().toLocaleDateString(),
+  });
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
-  const [numberOfRunners, setNumberOfRunners] = useState(20);
-  const [numberOfStages, setNumberOfStages] = useState(5);
   const [splitTimes, setSplitTimes] = useState<SplitTime[]>(
-    [...Array(numberOfRunners)].map((_, i) => ({
+    [...Array(raceInfo.numberOfRunners)].map((_, i) => ({
       runner: i + 1,
-      stage: [...Array(numberOfStages)].map((_, i) => ({ id: i + 1, time: 0 })),
+      stage: [...Array(raceInfo.numberOfStages)].map((_, i) => ({
+        id: i + 1,
+        time: 0,
+      })),
     })),
   );
   const { request, release } = useWakeLock();
 
   useEffect(() => {
-    if (!running) {
+    if (!raceInfo.isRunning) {
       clearInterval(intervalId!);
     }
-  }, [running, intervalId]);
+  }, [intervalId, raceInfo.isRunning]);
 
   useEffect(() => {
+    if (!raceInfo.isRunning) {
+      return;
+    }
     const haveAllFinished = splitTimes.every((splitTime) =>
       splitTime.stage.every((stage) => stage.time),
     );
     if (haveAllFinished) {
-      setRunning(false);
-      setFinished(true);
+      setRaceInfo((prev) => ({ ...prev, isRunning: false, isFinished: true }));
       release();
-      localforage.setItem(`splitTimes-${startTime}`, splitTimes);
+      localforage.setItem(`${raceInfo.raceName}±${raceInfo.startTime}`, {
+        splitTimes,
+        raceInfo,
+      });
     }
-  }, [release, splitTimes, startTime]);
+  }, [raceInfo, raceInfo.startTime, release, splitTimes]);
 
   const hasRunnerFinished = (runner: number) => {
     return (
@@ -61,20 +84,35 @@ export default function Index() {
   };
 
   const onFinish = () => {
-    setRunning(false);
-    setFinished(true);
+    setRaceInfo((prev) => ({ ...prev, isRunning: false, isFinished: true }));
     release();
-    localforage.setItem(`splitTimes-${startTime}`, splitTimes);
+    localforage.setItem(`${raceInfo.raceName}±${raceInfo.startTime}`, {
+      splitTimes,
+      raceInfo,
+    });
   };
 
   const onStart = () => {
     request();
-    setStartTime(Date.now());
-    setTime(Date.now());
-    setRunning(true);
+    setSplitTimes(
+      [...Array(raceInfo.numberOfRunners)].map((_, i) => ({
+        runner: i + 1,
+        stage: [...Array(raceInfo.numberOfStages)].map((_, i) => ({
+          id: i + 1,
+          time: 0,
+        })),
+      })),
+    );
+    const now = Date.now();
+    setRaceInfo((prev) => ({
+      ...prev,
+      startTime: now,
+      isRunning: true,
+      currentTime: now,
+    }));
     setIntervalId(
       setInterval(() => {
-        setTime(Date.now());
+        setRaceInfo((prev) => ({ ...prev, currentTime: Date.now() }));
       }, 1000),
     );
   };
@@ -82,13 +120,17 @@ export default function Index() {
   const handleStageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newNum = parseInt(e.target.value, 10) || 0;
     clearInterval(intervalId!);
-    setStartTime(0);
-    setTime(0);
-    setRunning(false);
-    setNumberOfStages(newNum);
+    setRaceInfo((prev) => ({
+      ...prev,
+      startTime: 0,
+      isRunning: false,
+      isFinished: false,
+      numberOfStages: newNum,
+      currentTime: 0,
+    }));
     setSplitTimes(
       newNum
-        ? [...Array(numberOfRunners)].map((_, i) => ({
+        ? [...Array(raceInfo.numberOfRunners)].map((_, i) => ({
             runner: i + 1,
             stage: [...Array(newNum)].map((_, i) => ({
               id: i + 1,
@@ -102,15 +144,19 @@ export default function Index() {
   const handleNumberOfRunnersChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newNum = parseInt(e.target.value, 10) || 0;
     clearInterval(intervalId!);
-    setStartTime(0);
-    setTime(0);
-    setRunning(false);
-    setNumberOfRunners(newNum);
+    setRaceInfo((prev) => ({
+      ...prev,
+      startTime: 0,
+      isRunning: false,
+      isFinished: false,
+      numberOfRunners: newNum,
+      currentTime: 0,
+    }));
     setSplitTimes(
       newNum
         ? [...Array(newNum)].map((_, i) => ({
             runner: i + 1,
-            stage: [...Array(numberOfStages)].map((_, i) => ({
+            stage: [...Array(raceInfo.numberOfStages)].map((_, i) => ({
               id: i + 1,
               time: 0,
             })),
@@ -137,7 +183,7 @@ export default function Index() {
           ...stages.slice(0, index),
           {
             ...stages[index],
-            time: time - startTime - timeTilNow,
+            time: raceInfo.currentTime - raceInfo.startTime - timeTilNow,
           },
           ...stages.slice(index + 1),
         ],
@@ -151,6 +197,30 @@ export default function Index() {
     }
   };
 
+  const undoLastSplit = (runner: number) => {
+    const splitTime = splitTimes.find(
+      (splitTime) => splitTime.runner === runner,
+    );
+    if (!splitTime) return;
+    const stages = [...splitTime.stage].reverse();
+    const index = stages.findIndex((stage) => stage.time);
+    if (index === -1) return;
+    const newStages = [
+      ...stages.slice(0, index),
+      { ...stages[index], time: 0 },
+      ...stages.slice(index + 1),
+    ].reverse();
+    const newSplitTime = {
+      ...splitTime,
+      stage: newStages,
+    };
+    setSplitTimes(
+      splitTimes.map((splitTime) =>
+        splitTime.runner === runner ? newSplitTime : splitTime,
+      ),
+    );
+  };
+
   const haveAllRunnersFinished = () => {
     return splitTimes.every((splitTime) =>
       splitTime.stage.every((stage) => stage.time),
@@ -162,17 +232,36 @@ export default function Index() {
       <div className="m-4">
         <div
           className={`flex justify-between gap-2 ${
-            running ? "flex-row" : "flex-col"
+            raceInfo.isRunning ? "flex-row" : "flex-col"
           }`}
         >
           <div
             id="time"
-            className="text-4xl font-bold bg-gray-300 p-2 rounded-md text-center"
+            className={`text-4xl font-bold bg-gray-300 p-2 rounded-md text-center ${
+              !raceInfo.isRunning && "hidden"
+            }`}
           >
-            {convertMsToTime(time - startTime)}
+            {convertMsToTime(raceInfo.currentTime - raceInfo.startTime)}
           </div>
-          {!running ? (
+          {!raceInfo.isRunning ? (
             <>
+              <label htmlFor="raceName" className="flex flex-col">
+                <span>Race Name</span>
+                <input
+                  type="text"
+                  name="raceName"
+                  id="raceName"
+                  className="p-2 rounded-md border border-gray-300"
+                  disabled={raceInfo.isRunning}
+                  defaultValue={raceInfo.raceName}
+                  onChange={(e) =>
+                    setRaceInfo((prev) => ({
+                      ...prev,
+                      raceName: e.target.value,
+                    }))
+                  }
+                />
+              </label>
               <label htmlFor="numberOfRunners" className="flex flex-col">
                 <span>Number of Runners</span>
                 <input
@@ -180,9 +269,9 @@ export default function Index() {
                   name="numberOfRunners"
                   id="numberOfRunners"
                   onChange={handleNumberOfRunnersChange}
-                  defaultValue={numberOfRunners}
+                  defaultValue={raceInfo.numberOfRunners}
                   className="p-2 rounded-md border border-gray-300"
-                  disabled={running}
+                  disabled={raceInfo.isRunning}
                 />
               </label>
 
@@ -193,9 +282,9 @@ export default function Index() {
                   name="numberOfStages"
                   id="numberOfStages"
                   onChange={handleStageChange}
-                  defaultValue={numberOfStages}
+                  defaultValue={raceInfo.numberOfStages}
                   className="p-2 rounded-md border border-gray-300"
-                  disabled={running}
+                  disabled={raceInfo.isRunning}
                 />
               </label>
             </>
@@ -205,22 +294,28 @@ export default function Index() {
             id="startStopButton"
             className="px-12"
             onClick={() => {
-              if (!running) {
+              if (!raceInfo.isRunning) {
                 onStart();
               } else {
                 onFinish();
               }
             }}
-            variant={running ? "warn" : "success"}
-            disabled={!numberOfRunners || !numberOfStages}
+            variant={raceInfo.isRunning ? "warn" : "success"}
+            disabled={
+              !raceInfo.numberOfRunners ||
+              !raceInfo.numberOfStages ||
+              !raceInfo.raceName
+            }
           >
-            {running ? "Finish" : "Start"} Race
+            {raceInfo.isRunning ? "Finish" : "Start"} Race
           </Button>
-          {!running ? (
+          {!raceInfo.isRunning ? (
             <div className="flex gap-4 w-full">
-              {finished ? (
+              {raceInfo.isFinished ? (
                 <Link
-                  to={`/race/splitTimes-${startTime}`}
+                  to={`/race/${encodeURIComponent(raceInfo.raceName)}±${
+                    raceInfo.startTime
+                  }`}
                   className="px-12 bg-slate-800 text-white p-2 rounded-md text-center grow"
                 >
                   Show Results
@@ -235,22 +330,35 @@ export default function Index() {
             </div>
           ) : null}
         </div>
-        <div className="grid gap-4 grid-cols-4 md:grid-cols-9 mt-2">
-          {splitTimes.map((splitTime, i) => (
-            <Button
-              key={i}
-              onClick={() => handleSplitTime(splitTime.runner)}
-              disabled={hasRunnerFinished(splitTime.runner)}
-              className="w-full"
-            >
-              {splitTime.runner}
-              {splitTime.stage.map((stage, j) => (
-                <div key={j}>
-                  S-{j + 1}: {stage.time ? "✅" : ""}
-                </div>
-              ))}
-            </Button>
-          ))}
+        <div
+          className={`grid gap-4 grid-cols-4 md:grid-cols-9 mt-2 ${
+            !raceInfo.isRunning && "hidden"
+          }`}
+        >
+          {splitTimes.map((splitTime, i) => {
+            const hasFinished = splitTime.stage.every((stage) => stage.time);
+            const currentStage =
+              splitTime.stage.findIndex((stage) => !stage.time) + 1;
+            return (
+              <div key={i} className="flex flex-col gap-2">
+                <Button
+                  onClick={() => handleSplitTime(splitTime.runner)}
+                  disabled={hasRunnerFinished(splitTime.runner)}
+                  className="w-full"
+                >
+                  {splitTime.runner}
+                  {hasFinished ? " - 🏁" : ` - S${currentStage}`}
+                </Button>
+                <Button
+                  onClick={() => undoLastSplit(splitTime.runner)}
+                  variant="warn"
+                  className="text-xs w-full p-1"
+                >
+                  Undo
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </main>

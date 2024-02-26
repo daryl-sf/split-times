@@ -13,7 +13,40 @@ export interface SplitTimeProps {
 export const SplitTime: FC<SplitTimeProps> = ({ splits }) => {
   const tableRef = useRef<HTMLTableElement>(null);
   return (
-    <div className="h-screen w-screen bg-white fixed overflow-scroll top-0 p-3 z-50">
+    <div className="flex flex-col gap-8">
+      <div className="overflow-x-scroll">
+        <table ref={tableRef}>
+          <thead>
+            <tr>
+              <th className="text-left">#</th>
+              {splits[0].stage.map((stage) => (
+                <th key={stage.id} className="text-left">
+                  Stage {stage.id}
+                </th>
+              ))}
+              <th className="text-left">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {splits.map((split) => (
+              <tr key={split.runner} className="odd:bg-slate-200">
+                <td>{split.runner}</td>
+                {split.stage.map((stage) => (
+                  <td className="px-1" key={stage.id}>
+                    {convertMsToTime(stage.time)}
+                  </td>
+                ))}
+                <td className="px-1">
+                  {convertMsToTime(
+                    split.stage.reduce((acc, stage) => acc + stage.time, 0),
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <div className="flex gap-8 mb-6">
         <Button
           onClick={() => {
@@ -32,34 +65,6 @@ export const SplitTime: FC<SplitTimeProps> = ({ splits }) => {
           Home
         </Link>
       </div>
-      <table ref={tableRef}>
-        <thead>
-          <tr>
-            <th>#</th>
-            {splits[0].stage.map((stage) => (
-              <th key={stage.id}>Stage {stage.id}</th>
-            ))}
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {splits.map((split) => (
-            <tr key={split.runner}>
-              <td>{split.runner}</td>
-              {split.stage.map((stage) => (
-                <td className="px-1" key={stage.id}>
-                  {convertMsToTime(stage.time)}
-                </td>
-              ))}
-              <td className="px-1">
-                {convertMsToTime(
-                  split.stage.reduce((acc, stage) => acc + stage.time, 0),
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 };

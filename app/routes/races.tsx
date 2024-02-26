@@ -27,11 +27,14 @@ export default function Races() {
       </Link>
       Past Races:
       {races.map((race) => {
-        const date = new Date(parseInt(race.split("-")[1], 10));
+        const [name, date] = race.split("±");
         return (
           <div key={race} className="flex justify-between">
-            <Link to={`/race/${race}`} className="underline">
-              Race - {date.toLocaleDateString()}
+            <Link
+              to={`/race/${encodeURIComponent(name)}±${date}`}
+              className="underline"
+            >
+              {name} - {new Date(parseInt(date, 10)).toLocaleDateString()}
             </Link>
             <Button variant="warn" onClick={() => handleDelete(race)}>
               Delete
