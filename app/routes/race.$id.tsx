@@ -1,3 +1,4 @@
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import localforage from "localforage";
 import { useEffect, useState } from "react";
@@ -6,8 +7,13 @@ import { SplitTime } from "~/components/SplitTime";
 
 import { RaceInfo, SplitTime as STType } from "./_index";
 
-export const loader = async ({ params }: { params: { id: string } }) => {
-  return { id: decodeURIComponent(params.id) };
+export const loader = async ({ params }: LoaderFunctionArgs) => {
+  const id = params.id;
+  console.log("id ===========", id);
+  if (!id) {
+    return { status: 404 };
+  }
+  return { id: decodeURIComponent(id) };
 };
 
 export default function Race() {
