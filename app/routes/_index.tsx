@@ -25,7 +25,6 @@ export interface RaceInfo {
   isFinished: boolean;
   numberOfRunners: number;
   numberOfStages: number;
-  raceName: string;
   raceDate: string;
 }
 
@@ -37,7 +36,6 @@ export default function Index() {
     isFinished: false,
     numberOfRunners: 20,
     numberOfStages: 5,
-    raceName: new Date().toLocaleDateString(),
     raceDate: new Date().toLocaleDateString(),
   });
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
@@ -68,7 +66,7 @@ export default function Index() {
     if (haveAllFinished) {
       setRaceInfo((prev) => ({ ...prev, isRunning: false, isFinished: true }));
       release();
-      localforage.setItem(`${raceInfo.raceName}±${raceInfo.startTime}`, {
+      localforage.setItem(`${raceInfo.startTime}`, {
         splitTimes,
         raceInfo,
       });
@@ -86,7 +84,7 @@ export default function Index() {
   const onFinish = () => {
     setRaceInfo((prev) => ({ ...prev, isRunning: false, isFinished: true }));
     release();
-    localforage.setItem(`${raceInfo.raceName}±${raceInfo.startTime}`, {
+    localforage.setItem(`${raceInfo.startTime}`, {
       splitTimes,
       raceInfo,
     });
@@ -245,23 +243,6 @@ export default function Index() {
           </div>
           {!raceInfo.isRunning ? (
             <>
-              <label htmlFor="raceName" className="flex flex-col">
-                <span>Race Name</span>
-                <input
-                  type="text"
-                  name="raceName"
-                  id="raceName"
-                  className="p-2 rounded-md border border-gray-300"
-                  disabled={raceInfo.isRunning}
-                  defaultValue={raceInfo.raceName}
-                  onChange={(e) =>
-                    setRaceInfo((prev) => ({
-                      ...prev,
-                      raceName: e.target.value,
-                    }))
-                  }
-                />
-              </label>
               <label htmlFor="numberOfRunners" className="flex flex-col">
                 <span>Number of Runners</span>
                 <input
@@ -301,11 +282,7 @@ export default function Index() {
               }
             }}
             variant={raceInfo.isRunning ? "warn" : "success"}
-            disabled={
-              !raceInfo.numberOfRunners ||
-              !raceInfo.numberOfStages ||
-              !raceInfo.raceName
-            }
+            disabled={!raceInfo.numberOfRunners || !raceInfo.numberOfStages}
           >
             {raceInfo.isRunning ? "Finish" : "Start"} Race
           </Button>
@@ -313,9 +290,7 @@ export default function Index() {
             <div className="flex gap-4 w-full">
               {raceInfo.isFinished ? (
                 <Link
-                  to={`/race/${encodeURIComponent(raceInfo.raceName)}±${
-                    raceInfo.startTime
-                  }`}
+                  to={`/race/${raceInfo.startTime}`}
                   className="px-12 bg-slate-800 text-white p-2 rounded-md text-center grow"
                 >
                   Show Results

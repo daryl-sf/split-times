@@ -26,22 +26,22 @@ export default function Races() {
         Home
       </Link>
       Past Races:
-      {races.map((race) => {
-        const [name, date] = race.split("±");
-        return (
-          <div key={race} className="flex justify-between">
-            <Link
-              to={`/race/${encodeURIComponent(name)}±${date}`}
-              className="underline"
-            >
-              {name} - {new Date(parseInt(date, 10)).toLocaleDateString()}
-            </Link>
-            <Button variant="warn" onClick={() => handleDelete(race)}>
-              Delete
-            </Button>
-          </div>
-        );
-      })}
+      {races
+        .sort()
+        .reverse()
+        .map((race) => {
+          const date = new Date(parseInt(race, 10));
+          return (
+            <div key={race} className="flex justify-between">
+              <Link to={`/race/${race}`} className="underline">
+                {date.toLocaleDateString()} {date.toLocaleTimeString()}
+              </Link>
+              <Button variant="warn" onClick={() => handleDelete(race)}>
+                Delete
+              </Button>
+            </div>
+          );
+        })}
     </div>
   );
 }

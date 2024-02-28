@@ -9,7 +9,6 @@ import { RaceInfo, SplitTime as STType } from "./_index";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
-  console.log("id ===========", id);
   if (!id) {
     return { status: 404 };
   }
@@ -44,7 +43,7 @@ export default function Race() {
   return (
     <main className="relative min-h-screenm-6 p-8">
       <h1 className="text-4xl font-bold text-center mb-8 capitalize">
-        {raceInfo?.raceName}
+        {raceInfo?.raceDate}
       </h1>
       <div className="flex gap-8 mb-8">
         <p>
@@ -52,9 +51,6 @@ export default function Race() {
         </p>
         <p>
           <span className="font-bold">Stages:</span> {raceInfo.numberOfStages}
-        </p>
-        <p>
-          <span className="font-bold">Date:</span> {raceInfo.raceDate}
         </p>
       </div>
       {splitTimes ? <SplitTime splits={splitTimes} /> : null}
