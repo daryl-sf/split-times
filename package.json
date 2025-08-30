@@ -42,7 +42,7 @@
     "@types/architect__functions": "^3.13.10",
     "@types/bcryptjs": "2.4.5",
     "@types/eslint": "^8.44.6",
-    "@types/node": "^18.19.15",
+    "@types/node": "^20.19.11",
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
     "@typescript-eslint/eslint-plugin": "^6.8.0",
@@ -78,6 +78,6 @@
     "vitest": "^0.34.6"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

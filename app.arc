@@ -2,7 +2,7 @@
 split-times-a104
 
 @aws
-runtime nodejs18.x
+runtime nodejs20.x
 region eu-west-1
 timeout 30
 # concurrency 1
