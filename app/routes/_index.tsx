@@ -277,7 +277,7 @@ export default function Index() {
             onClick={() => {
               if (!raceInfo.isRunning) {
                 onStart();
-              } else {
+              } else if (window.confirm("Are you sure you want to finish the race?")) {
                 onFinish();
               }
             }}
