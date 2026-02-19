@@ -1,28 +1,27 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { isRouteErrorResponse, useLoaderData, useRouteError } from "@remix-run/react";
 import localforage from "localforage";
 import { useEffect, useState } from "react";
 
 import { SplitTime } from "~/components/SplitTime";
-
-import { RaceInfo, SplitTime as STType } from "./_index";
+import { RaceInfo, RunnerSplitTime } from "~/types";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
   if (!id) {
-    return { status: 404 };
+    throw new Response("Not Found", { status: 404 });
   }
   return { id: decodeURIComponent(id) };
 };
 
 export default function Race() {
   const { id } = useLoaderData<{ id: string }>();
-  const [splitTimes, setSplitTimes] = useState<STType[] | undefined>();
+  const [splitTimes, setSplitTimes] = useState<RunnerSplitTime[] | undefined>();
   const [raceInfo, setRaceInfo] = useState<RaceInfo | undefined>();
   useEffect(() => {
     const getSplits = async () => {
       const data = await localforage.getItem<{
-        splitTimes: STType[];
+        splitTimes: RunnerSplitTime[];
         raceInfo: RaceInfo;
       }>(id);
 
@@ -37,14 +36,21 @@ export default function Race() {
   }, [id]);
 
   if (!raceInfo) {
-    return null;
+    return (
+      <main className="relative min-h-screen p-8 flex items-center justify-center">
+        <p className="text-gray-500 text-lg">Loading race data...</p>
+      </main>
+    );
   }
 
   return (
-    <main className="relative min-h-screenm-6 p-8">
+    <main className="relative min-h-screen p-8">
       <h1 className="text-4xl font-bold text-center mb-8 capitalize">
-        {raceInfo?.raceDate}
+        {raceInfo.raceName || raceInfo.raceDate}
       </h1>
+      {raceInfo.raceName ? (
+        <p className="text-center text-gray-500 -mt-6 mb-8">{raceInfo.raceDate}</p>
+      ) : null}
       <div className="flex gap-8 mb-8">
         <p>
           <span className="font-bold">Runners:</span> {raceInfo.numberOfRunners}
@@ -54,6 +60,28 @@ export default function Race() {
         </p>
       </div>
       {splitTimes ? <SplitTime splits={splitTimes} /> : null}
+    </main>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  return (
+    <main className="relative min-h-screen p-8 flex flex-col items-center justify-center">
+      <h1 className="text-2xl font-bold mb-4">
+        {isRouteErrorResponse(error)
+          ? `${error.status} ${error.statusText}`
+          : "Something went wrong"}
+      </h1>
+      <p className="text-gray-600 mb-6">
+        {isRouteErrorResponse(error)
+          ? "This race could not be found."
+          : "An unexpected error occurred. Please try refreshing the page."}
+      </p>
+      <a href="/" className="px-6 bg-slate-800 text-white p-2 rounded-md">
+        Go Home
+      </a>
     </main>
   );
 }

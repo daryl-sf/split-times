@@ -14,7 +14,7 @@ export default function Admin() {
   };
 
   return (
-    <main className="relative min-h-screenm-6 p-8">
+    <main className="relative min-h-screen p-8">
       <Button variant="warn" onClick={reset}>
         Reset local DB
       </Button>

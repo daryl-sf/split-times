@@ -16,9 +16,9 @@ export const Keypad: FC<KeypadProps> = ({
   numberInput,
 }) => {
   return (
-    <div className="grid grid-cols-3 grid-rows-4 gap-4 sm:w-1/2">
+    <div className="grid grid-cols-3 grid-rows-5 gap-4">
       <div className="col-span-3 text-2xl my-2 mx-auto text-center">
-        {numberInput || <>&nbsp;</>}
+        {numberInput != null ? numberInput : <>&nbsp;</>}
       </div>
       <Button onClick={() => onChange(1)}>1</Button>
       <Button onClick={() => onChange(2)}>2</Button>
