@@ -21,6 +21,7 @@
   ],
   "dependencies": {
     "@architect/architect": "^10.14.2",
+    "@heroicons/react": "^2.2.0",
     "@remix-run/architect": "^2.6.0",
     "@remix-run/css-bundle": "^2.6.0",
     "@remix-run/node": "^2.6.0",
