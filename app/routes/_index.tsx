@@ -8,8 +8,9 @@ import { KeypadRunnerTile } from "~/components/KeypadRunnerTile";
 import { RaceHeader } from "~/components/RaceHeader";
 import { RaceSetupForm } from "~/components/RaceSetupForm";
 import { RunnerButton } from "~/components/RunnerButton";
+import { TimeTrialRunnerButton } from "~/components/TimeTrialRunnerButton";
 import { UndoToast } from "~/components/UndoToast";
-import { RaceInfo, RunnerSplitTime, Stage, UiMode } from "~/types";
+import { RaceInfo, RaceType, RunnerSplitTime, Stage, TimeTrialRunner, UiMode } from "~/types";
 import { useWakeLock } from "~/useWakeLock";
 
 export const meta: MetaFunction = () => [{ title: "Split Times" }];
@@ -22,6 +23,15 @@ function createSplitTimes(runners: number, stages: number): RunnerSplitTime[] {
       id: j + 1,
       time: 0,
     })),
+  }));
+}
+
+function createTimeTrialRunners(count: number): TimeTrialRunner[] {
+  if (!count) return [];
+  return [...Array(count)].map((_, i) => ({
+    runner: i + 1,
+    startTime: 0,
+    finishTime: 0,
   }));
 }
 
@@ -42,13 +52,17 @@ export default function Index() {
     numberOfStages: 5,
     raceDate: new Date().toLocaleDateString(),
     raceName: "",
+    raceType: "massStart",
   });
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [splitTimes, setSplitTimes] = useState<RunnerSplitTime[]>(
     createSplitTimes(20, 5),
   );
+  const [timeTrialRunners, setTimeTrialRunners] = useState<TimeTrialRunner[]>([]);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const { request, release } = useWakeLock();
   const [uiMode, setUiMode] = useState<UiMode>("keypad");
+  const [raceType, setRaceType] = useState<RaceType>("massStart");
   const [keypadInput, setKeypadInput] = useState<number | null>(null);
   const [undoToast, setUndoToast] = useState<UndoToastState | null>(null);
   const undoToastTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,6 +71,8 @@ export default function Index() {
   raceInfoRef.current = raceInfo;
   const splitTimesRef = useRef(splitTimes);
   splitTimesRef.current = splitTimes;
+  const timeTrialRunnersRef = useRef(timeTrialRunners);
+  timeTrialRunnersRef.current = timeTrialRunners;
 
   useEffect(() => {
     if (!raceInfo.isRunning && intervalId) {
@@ -79,24 +95,45 @@ export default function Index() {
     });
   }, [release]);
 
+  const finishTimeTrial = useCallback((runners: TimeTrialRunner[]) => {
+    const info = raceInfoRef.current;
+    const finishedRaceInfo = { ...info, isRunning: false, isFinished: true };
+    setRaceInfo(finishedRaceInfo);
+    setShowRaceView(false);
+    release();
+    const storageKey = info.startTime || `tt-${info.raceDate}`;
+    localforage.setItem(`${storageKey}`, {
+      timeTrialRunners: runners,
+      raceInfo: finishedRaceInfo,
+    });
+  }, [release]);
+
   useEffect(() => {
     if (!raceInfo.isRunning) return;
+    if (raceInfo.raceType === "timeTrial") {
+      const haveAllFinished = timeTrialRunners.every((r) => r.finishTime > 0);
+      if (haveAllFinished && timeTrialRunners.length > 0) {
+        finishTimeTrial(timeTrialRunners);
+      }
+      return;
+    }
     const haveAllFinished = splitTimes.every((splitTime) =>
       splitTime.stage.every((stage) => stage.time),
     );
     if (haveAllFinished) {
       finishRace(splitTimes);
     }
-  }, [raceInfo.isRunning, splitTimes, finishRace]);
+  }, [raceInfo.isRunning, raceInfo.raceType, splitTimes, timeTrialRunners, finishRace, finishTimeTrial]);
 
   useEffect(() => {
-    if (!raceInfo.isRunning) return;
+    if (!raceInfo.isRunning && !showRaceView) return;
+    if (raceInfo.raceType !== "timeTrial" && !raceInfo.isRunning) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [raceInfo.isRunning]);
+  }, [raceInfo.isRunning, raceInfo.raceType, showRaceView]);
 
   const saveRaceProgress = useCallback((currentSplitTimes: RunnerSplitTime[]) => {
     const info = raceInfoRef.current;
@@ -108,6 +145,15 @@ export default function Index() {
     }
   }, []);
 
+  const saveTimeTrialProgress = useCallback((runners: TimeTrialRunner[]) => {
+    const info = raceInfoRef.current;
+    const storageKey = info.startTime || `tt-${info.raceDate}`;
+    localforage.setItem(`${storageKey}`, {
+      timeTrialRunners: runners,
+      raceInfo: info,
+    });
+  }, []);
+
   const hasRunnerFinished = (runner: number) => {
     return (
       splitTimes
@@ -116,10 +162,35 @@ export default function Index() {
     );
   };
 
-  const onFinish = () => finishRace(splitTimes);
+  const onFinish = () => {
+    if (raceInfo.raceType === "timeTrial") {
+      finishTimeTrial(timeTrialRunners);
+    } else {
+      finishRace(splitTimes);
+    }
+  };
 
   const onEnterRaceView = () => {
-    setSplitTimes(createSplitTimes(raceInfo.numberOfRunners, raceInfo.numberOfStages));
+    if (raceType === "timeTrial") {
+      setTimeTrialRunners(createTimeTrialRunners(raceInfo.numberOfRunners));
+      const now = Date.now();
+      setRaceInfo((prev) => ({
+        ...prev,
+        raceType: "timeTrial",
+        startTime: now,
+        isRunning: true,
+        currentTime: now,
+      }));
+      request();
+      setIntervalId(
+        setInterval(() => {
+          setCurrentTime(Date.now());
+        }, 100),
+      );
+    } else {
+      setSplitTimes(createSplitTimes(raceInfo.numberOfRunners, raceInfo.numberOfStages));
+      setRaceInfo((prev) => ({ ...prev, raceType: "massStart" }));
+    }
     setKeypadInput(null);
     dismissUndoToast();
     setShowRaceView(true);
@@ -140,6 +211,49 @@ export default function Index() {
       }, 100),
     );
   };
+
+  const handleTimeTrialTap = useCallback((runnerNum: number) => {
+    const runners = timeTrialRunnersRef.current;
+    const runner = runners.find((r) => r.runner === runnerNum);
+    if (!runner) return;
+
+    const now = Date.now();
+    let updated: TimeTrialRunner;
+    if (runner.startTime === 0) {
+      updated = { ...runner, startTime: now };
+    } else if (runner.finishTime === 0) {
+      updated = { ...runner, finishTime: now };
+    } else {
+      return;
+    }
+
+    const updatedRunners = runners.map((r) =>
+      r.runner === runnerNum ? updated : r,
+    );
+    setTimeTrialRunners(updatedRunners);
+    saveTimeTrialProgress(updatedRunners);
+  }, [saveTimeTrialProgress]);
+
+  const undoTimeTrialRunner = useCallback((runnerNum: number) => {
+    const runners = timeTrialRunnersRef.current;
+    const runner = runners.find((r) => r.runner === runnerNum);
+    if (!runner) return;
+
+    let updated: TimeTrialRunner;
+    if (runner.finishTime > 0) {
+      updated = { ...runner, finishTime: 0 };
+    } else if (runner.startTime > 0) {
+      updated = { ...runner, startTime: 0 };
+    } else {
+      return;
+    }
+
+    const updatedRunners = runners.map((r) =>
+      r.runner === runnerNum ? updated : r,
+    );
+    setTimeTrialRunners(updatedRunners);
+    saveTimeTrialProgress(updatedRunners);
+  }, [saveTimeTrialProgress]);
 
   const handleStageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newNum = parseInt(e.target.value, 10) || 0;
@@ -167,6 +281,7 @@ export default function Index() {
       currentTime: 0,
     }));
     setSplitTimes(createSplitTimes(newNum, raceInfo.numberOfStages));
+    setTimeTrialRunners(createTimeTrialRunners(newNum));
   };
 
   const handleSplitTime = useCallback((runner: number) => {
@@ -304,6 +419,7 @@ export default function Index() {
             numberOfRunners={raceInfo.numberOfRunners}
             numberOfStages={raceInfo.numberOfStages}
             uiMode={uiMode}
+            raceType={raceType}
             isFinished={raceInfo.isFinished}
             startTime={raceInfo.startTime}
             onRaceNameChange={(value) =>
@@ -312,6 +428,7 @@ export default function Index() {
             onNumberOfRunnersChange={handleNumberOfRunnersChange}
             onNumberOfStagesChange={handleStageChange}
             onUiModeChange={setUiMode}
+            onRaceTypeChange={setRaceType}
             onStartRace={onEnterRaceView}
           />
         ) : (
@@ -319,13 +436,36 @@ export default function Index() {
             raceName={raceInfo.raceName}
             elapsedTime={raceInfo.currentTime - raceInfo.startTime}
             isRunning={raceInfo.isRunning}
+            isTimeTrial={raceInfo.raceType === "timeTrial"}
+            timeTrialProgress={
+              raceInfo.raceType === "timeTrial"
+                ? {
+                    finished: timeTrialRunners.filter((r) => r.finishTime > 0).length,
+                    total: timeTrialRunners.length,
+                  }
+                : undefined
+            }
             onBack={() => setShowRaceView(false)}
             onStart={onStartTimer}
             onFinish={onFinish}
           />
         )}
 
-        {showRaceView && uiMode === "buttons" ? (
+        {showRaceView && raceInfo.raceType === "timeTrial" ? (
+          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-2">
+            {timeTrialRunners.map((runner) => (
+              <TimeTrialRunnerButton
+                key={runner.runner}
+                runner={runner}
+                currentTime={currentTime}
+                onTap={handleTimeTrialTap}
+                onUndo={undoTimeTrialRunner}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {showRaceView && raceInfo.raceType === "massStart" && uiMode === "buttons" ? (
           <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-2">
             {splitTimes.map((splitTime) => (
               <RunnerButton
@@ -341,7 +481,7 @@ export default function Index() {
           </div>
         ) : null}
 
-        {showRaceView && uiMode === "keypad" ? (
+        {showRaceView && raceInfo.raceType === "massStart" && uiMode === "keypad" ? (
           <>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mt-2 pb-96">
               {splitTimes.map((splitTime) => (

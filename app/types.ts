@@ -1,5 +1,7 @@
 export type UiMode = "buttons" | "keypad";
 
+export type RaceType = "massStart" | "timeTrial";
+
 export interface Stage {
   id: number;
   time: number;
@@ -8,6 +10,12 @@ export interface Stage {
 export interface RunnerSplitTime {
   runner: number;
   stage: Stage[];
+}
+
+export interface TimeTrialRunner {
+  runner: number;
+  startTime: number;
+  finishTime: number;
 }
 
 export interface RaceInfo {
@@ -19,4 +27,5 @@ export interface RaceInfo {
   numberOfStages: number;
   raceDate: string;
   raceName?: string;
+  raceType: RaceType;
 }

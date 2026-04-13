@@ -1,7 +1,7 @@
 import { Link } from "@remix-run/react";
 import { ChangeEvent, FC } from "react";
 
-import { UiMode } from "~/types";
+import { RaceType, UiMode } from "~/types";
 
 import { Button } from "./Button";
 
@@ -10,12 +10,14 @@ interface RaceSetupFormProps {
   numberOfRunners: number;
   numberOfStages: number;
   uiMode: UiMode;
+  raceType: RaceType;
   isFinished: boolean;
   startTime: number;
   onRaceNameChange: (value: string) => void;
   onNumberOfRunnersChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onNumberOfStagesChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onUiModeChange: (mode: UiMode) => void;
+  onRaceTypeChange: (type: RaceType) => void;
   onStartRace: () => void;
 }
 
@@ -24,14 +26,18 @@ export const RaceSetupForm: FC<RaceSetupFormProps> = ({
   numberOfRunners,
   numberOfStages,
   uiMode,
+  raceType,
   isFinished,
   startTime,
   onRaceNameChange,
   onNumberOfRunnersChange,
   onNumberOfStagesChange,
   onUiModeChange,
+  onRaceTypeChange,
   onStartRace,
 }) => {
+  const isTimeTrial = raceType === "timeTrial";
+
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor="raceName" className="flex flex-col">
@@ -47,6 +53,60 @@ export const RaceSetupForm: FC<RaceSetupFormProps> = ({
         />
       </label>
 
+      <fieldset className="flex flex-col">
+        <legend>Race Type</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <label
+            className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
+              raceType === "massStart"
+                ? "bg-blue-500 text-white border-blue-500"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="raceType"
+              value="massStart"
+              checked={raceType === "massStart"}
+              onChange={() => onRaceTypeChange("massStart")}
+              className="sr-only"
+            />
+            <span className="font-medium">Mass Start</span>
+            <span
+              className={`text-xs mt-1 ${
+                raceType === "massStart" ? "text-blue-100" : "text-gray-500"
+              }`}
+            >
+              All runners start together with a shared timer.
+            </span>
+          </label>
+          <label
+            className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
+              raceType === "timeTrial"
+                ? "bg-blue-500 text-white border-blue-500"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="raceType"
+              value="timeTrial"
+              checked={raceType === "timeTrial"}
+              onChange={() => onRaceTypeChange("timeTrial")}
+              className="sr-only"
+            />
+            <span className="font-medium">Time Trial</span>
+            <span
+              className={`text-xs mt-1 ${
+                raceType === "timeTrial" ? "text-blue-100" : "text-gray-500"
+              }`}
+            >
+              Staggered starts. Tap a runner to start, tap again to finish.
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
       <label htmlFor="numberOfRunners" className="flex flex-col">
         <span>Number of Runners</span>
         <input
@@ -59,79 +119,83 @@ export const RaceSetupForm: FC<RaceSetupFormProps> = ({
         />
       </label>
 
-      <label htmlFor="numberOfStages" className="flex flex-col">
-        <span>Number of Stages (inc transitions if needed)</span>
-        <input
-          type="number"
-          name="numberOfStages"
-          id="numberOfStages"
-          onChange={onNumberOfStagesChange}
-          defaultValue={numberOfStages}
-          className="p-2 rounded-md border border-gray-300"
-        />
-      </label>
+      {!isTimeTrial ? (
+        <label htmlFor="numberOfStages" className="flex flex-col">
+          <span>Number of Stages (inc transitions if needed)</span>
+          <input
+            type="number"
+            name="numberOfStages"
+            id="numberOfStages"
+            onChange={onNumberOfStagesChange}
+            defaultValue={numberOfStages}
+            className="p-2 rounded-md border border-gray-300"
+          />
+        </label>
+      ) : null}
 
-      <fieldset className="flex flex-col">
-        <legend>Input Mode</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <label
-            className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
-              uiMode === "buttons"
-                ? "bg-blue-500 text-white border-blue-500"
-                : "bg-white border-gray-300"
-            }`}
-          >
-            <input
-              type="radio"
-              name="uiMode"
-              value="buttons"
-              checked={uiMode === "buttons"}
-              onChange={() => onUiModeChange("buttons")}
-              className="sr-only"
-            />
-            <span className="font-medium">Buttons</span>
-            <span
-              className={`text-xs mt-1 ${
-                uiMode === "buttons" ? "text-blue-100" : "text-gray-500"
+      {!isTimeTrial ? (
+        <fieldset className="flex flex-col">
+          <legend>Input Mode</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <label
+              className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
+                uiMode === "buttons"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white border-gray-300"
               }`}
             >
-              One button per runner. Tap to record, with individual undo.
-            </span>
-          </label>
-          <label
-            className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
-              uiMode === "keypad"
-                ? "bg-blue-500 text-white border-blue-500"
-                : "bg-white border-gray-300"
-            }`}
-          >
-            <input
-              type="radio"
-              name="uiMode"
-              value="keypad"
-              checked={uiMode === "keypad"}
-              onChange={() => onUiModeChange("keypad")}
-              className="sr-only"
-            />
-            <span className="font-medium">Keypad</span>
-            <span
-              className={`text-xs mt-1 ${
-                uiMode === "keypad" ? "text-blue-100" : "text-gray-500"
+              <input
+                type="radio"
+                name="uiMode"
+                value="buttons"
+                checked={uiMode === "buttons"}
+                onChange={() => onUiModeChange("buttons")}
+                className="sr-only"
+              />
+              <span className="font-medium">Buttons</span>
+              <span
+                className={`text-xs mt-1 ${
+                  uiMode === "buttons" ? "text-blue-100" : "text-gray-500"
+                }`}
+              >
+                One button per runner. Tap to record, with individual undo.
+              </span>
+            </label>
+            <label
+              className={`flex flex-col rounded-md p-3 cursor-pointer transition-colors border ${
+                uiMode === "keypad"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white border-gray-300"
               }`}
             >
-              Best for races with lots of runners. Type a runner number and
-              press enter. Tap a runner to undo.
-            </span>
-          </label>
-        </div>
-      </fieldset>
+              <input
+                type="radio"
+                name="uiMode"
+                value="keypad"
+                checked={uiMode === "keypad"}
+                onChange={() => onUiModeChange("keypad")}
+                className="sr-only"
+              />
+              <span className="font-medium">Keypad</span>
+              <span
+                className={`text-xs mt-1 ${
+                  uiMode === "keypad" ? "text-blue-100" : "text-gray-500"
+                }`}
+              >
+                Best for races with lots of runners. Type a runner number and
+                press enter. Tap a runner to undo.
+              </span>
+            </label>
+          </div>
+        </fieldset>
+      ) : null}
 
       <Button
         id="startStopButton"
         className="px-12"
         onClick={onStartRace}
         variant="success"
-        disabled={!numberOfRunners || !numberOfStages}
+        disabled={!numberOfRunners || (!isTimeTrial && !numberOfStages)}
       >
         Start Race
       </Button>

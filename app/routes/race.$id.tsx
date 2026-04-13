@@ -4,7 +4,13 @@ import localforage from "localforage";
 import { useEffect, useState } from "react";
 
 import { SplitTime } from "~/components/SplitTime";
-import { RaceInfo, RunnerSplitTime } from "~/types";
+import { RaceInfo, RunnerSplitTime, TimeTrialRunner } from "~/types";
+
+interface RaceData {
+  splitTimes?: RunnerSplitTime[];
+  timeTrialRunners?: TimeTrialRunner[];
+  raceInfo: RaceInfo;
+}
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
@@ -17,16 +23,17 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 export default function Race() {
   const { id } = useLoaderData<{ id: string }>();
   const [splitTimes, setSplitTimes] = useState<RunnerSplitTime[] | undefined>();
+  const [timeTrialRunners, setTimeTrialRunners] = useState<TimeTrialRunner[] | undefined>();
   const [raceInfo, setRaceInfo] = useState<RaceInfo | undefined>();
   useEffect(() => {
     const getSplits = async () => {
-      const data = await localforage.getItem<{
-        splitTimes: RunnerSplitTime[];
-        raceInfo: RaceInfo;
-      }>(id);
+      const data = await localforage.getItem<RaceData>(id);
 
       if (data?.splitTimes) {
         setSplitTimes(data.splitTimes);
+      }
+      if (data?.timeTrialRunners) {
+        setTimeTrialRunners(data.timeTrialRunners);
       }
       if (data?.raceInfo) {
         setRaceInfo(data.raceInfo);
@@ -43,6 +50,8 @@ export default function Race() {
     );
   }
 
+  const isTimeTrial = raceInfo.raceType === "timeTrial";
+
   return (
     <main className="relative min-h-screen p-8">
       <h1 className="text-4xl font-bold text-center mb-8 capitalize">
@@ -55,11 +64,21 @@ export default function Race() {
         <p>
           <span className="font-bold">Runners:</span> {raceInfo.numberOfRunners}
         </p>
-        <p>
-          <span className="font-bold">Stages:</span> {raceInfo.numberOfStages}
-        </p>
+        {!isTimeTrial ? (
+          <p>
+            <span className="font-bold">Stages:</span> {raceInfo.numberOfStages}
+          </p>
+        ) : (
+          <p>
+            <span className="font-bold">Type:</span> Time Trial
+          </p>
+        )}
       </div>
-      {splitTimes ? <SplitTime splits={splitTimes} /> : null}
+      {isTimeTrial && timeTrialRunners ? (
+        <SplitTime timeTrialRunners={timeTrialRunners} />
+      ) : splitTimes ? (
+        <SplitTime splits={splitTimes} />
+      ) : null}
     </main>
   );
 }
