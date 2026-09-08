@@ -116,6 +116,8 @@ Never collapse those two into a single ambiguous statement.
 
 ## Publishing note
 
+See [`HOSTING.md`](HOSTING.md) for temporary hosting on the `product-context` branch and how to promote this to `daryl-sf/split-times-product-context`.
+
 This product-context repository is intended to live at:
 
 `github.com/daryl-sf/split-times-product-context`
