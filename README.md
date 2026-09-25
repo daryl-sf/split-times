@@ -37,6 +37,7 @@ Use this repository to answer:
 | What should we work on next? | [`roadmap/`](roadmap/) |
 | What decisions were made? | [`decisions/`](decisions/) |
 | How should coding agents work? | [`agents/`](agents/) |
+| Ready-made MVP build prompt | [`prompts/create-commercial-mvp.md`](prompts/create-commercial-mvp.md) |
 
 ---
 
